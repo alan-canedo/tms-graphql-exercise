@@ -1,11 +1,11 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { typeDefs } from './schema.js';
-import db from './data/_db.js';
+import db, {type Book} from './data/_db.js';
 
 const resolvers = {
     Book: {
-        checkedOutBy(parent: any) {
+        checkedOutBy(parent: Book) {
             return db.persons.find(p => p.id === parent.person_id)
         }
     },
@@ -13,12 +13,12 @@ const resolvers = {
         getAllBooks() {
             return db.books
         },
-        getBookForId(_parent: any, args: { bookId: string }) {
+        getBookForId(_parent: unknown, args: { bookId: string }) {
             return db.books.find(e => e.id === args.bookId)
         },
     },
     Mutation: {
-        checkOutBook(_parent: any, args: {bookId: string, personId: string}) {
+        checkOutBook(_parent: unknown, args: {bookId: string, personId: string}) {
             const book = db.books.find(e => e.id === args.bookId && !e.isCheckedOut)
             const person = db.persons.find(e => e.id === args.personId)
 
@@ -36,7 +36,7 @@ const resolvers = {
 
             return db.books.find(e => e.id === args.bookId)
         },
-        returnBook(_parent: any, args: { bookId: string }) {
+        returnBook(_parent: unknown, args: { bookId: string }) {
             const book = db.books.find(e => e.id === args.bookId && e.isCheckedOut)
             if(!book) {
                 return db.books.find(e => e.id === args.bookId)
