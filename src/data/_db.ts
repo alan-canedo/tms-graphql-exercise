@@ -4,7 +4,7 @@ export interface Book {
   author: string;
   isCheckedOut: boolean;
   person_id: string | null;
-}
+};
 
 export interface Person {
   id: string;
@@ -12,7 +12,7 @@ export interface Person {
   lastName: string;
   emailAddress: string;
   phoneNumber: string | null;
-}
+};
 
 let books: Book[] = [
   {
