@@ -5,6 +5,7 @@ frontend directory:
 
 - npm ci: install the locked dependencies.
 - npm run dev: start the Vite development server.
+- npm run codegen: regenerate GraphQL types from the running local server.
 - npm run typecheck: check application and Vite configuration types.
 - npm run build: typecheck and create the production bundle in dist/.
 - npm run preview: serve the built bundle locally.
@@ -54,5 +55,12 @@ same book can then update one shared record instead of separate copies.
 
 Apollo handles GraphQL server data and its cache. React state can handle local
 UI needs, so this application does not need Redux or another application state
-store. This setup adds no queries, mutations, code generation, or page data
+store. This setup adds no queries, mutations, or page data
 fetching, and configuring the client alone does not send a GraphQL request.
+
+GraphQL Code Generator is configured in codegen.yml. Future operation documents
+belong in src/graphql/**/*.graphql; generated types are written only to
+src/graphql/generated.ts. Never edit that generated file manually. Run
+npm run codegen after schema or operation changes, with the server running at
+http://localhost:4000/. See src/graphql/README.md for dependency explanations
+and the distinction between schema types and operation result types.
