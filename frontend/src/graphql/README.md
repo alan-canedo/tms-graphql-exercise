@@ -1,8 +1,8 @@
 # GraphQL documents and generated types
 
-Put future operation documents in this folder as named `.graphql` files.
-No application operations have been added yet. Codegen intentionally supports
-an empty documents folder, so a temporary query is unnecessary.
+`getAllBooks.graphql` defines the named `GetAllBooks` operation. It selects only
+`id`, `title`, `author`, and `isCheckedOut` from `getAllBooks`. It does not select
+`checkedOutBy` or any Person fields.
 
 With the GraphQL server running at http://localhost:4000/, run from `frontend/`:
 
@@ -14,29 +14,36 @@ The only generated source file is `generated.ts`. Never edit it manually.
 Edit operation documents or `../../codegen.yml`, then rerun codegen instead.
 Commit the generated output alongside those changes.
 
-Currently the output contains schema types and shared helpers. Once operations
-exist, it will also contain their result and variable types. Schema types describe
-all available fields; operation result types describe only the selected fields,
-including nested selections, aliases, and nullability. Use operation result types
-for response data rather than treating every response as a complete schema object.
+Codegen uses these development dependencies:
 
-The three codegen development dependencies are:
-
-- `@graphql-codegen/cli`: loads the configuration and schema, validates operation
-  documents, and coordinates generation.
-- `@graphql-codegen/typescript`: generates schema types, scalar mappings, and
-  helpers used by operation types.
+- `@graphql-codegen/cli`: loads configuration and schema, validates documents,
+  and coordinates generation.
+- `@graphql-codegen/typescript`: generates schema types and scalar mappings.
 - `@graphql-codegen/typescript-operations`: generates result and variable types
-  from the operation documents and schema.
+  from the actual selections, including nullability.
+- `@graphql-codegen/typed-document-node`: generates the executable query document
+  with its result and variable types attached.
+- `@graphql-typed-document-node/core`: supplies the TypedDocumentNode type.
 
-The existing `graphql` dependency supplies the GraphQL parser and type system.
-No client preset, runtime document generation, or React hooks plugin is needed.
+The existing `graphql` dependency supplies the parser and type system. No React
+hooks plugin is needed.
 
-Codegen reduces type drift by deriving types from the live schema and actual
-selections, and rejecting invalid operations during generation. It still requires
-rerunning when either changes; it is not runtime response validation. For this
-small app, the tradeoff is extra development dependencies, a generated file to
-review, and a generation step that requires a reachable introspection endpoint.
+`GetAllBooksDocument` is a `TypedDocumentNode<GetAllBooksQuery,
+GetAllBooksQueryVariables>`. BooksPage imports this generated document and passes
+it to Apollo's `useQuery`. Apollo infers the data and variable types from the
+document, so each book in `data.getAllBooks` has the four selected properties.
+There is no handwritten Book response DTO or duplicate query string.
+
+Schema types describe all available fields, so the generated schema types still
+include Person and checkedOutBy. Their presence in TypeScript does not request
+those fields. The operation type and executable document contain only the
+selected book fields. Apollo adds __typename metadata to the network query for
+its normalized cache; it does not add checkedOutBy or Person selections.
+
+Codegen derives types from the live schema and actual selections, and rejects
+invalid operations during generation. Rerun it when either changes. It does not
+validate server responses at runtime, and generation needs a reachable schema
+introspection endpoint.
 
 The configuration uses `unknown` for unmapped scalars and fails on custom scalars
 without explicit mappings, avoiding `any`. Enum unions and type-only imports

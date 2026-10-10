@@ -18,7 +18,7 @@ The application uses React Router and a responsive MUI shell:
 - src/main.tsx mounts the app inside ApolloProvider and BrowserRouter.
 - src/App.tsx defines the routes and applies MUI's CssBaseline.
 - src/AppShell.tsx provides the Library Checkout header and main content container.
-- src/pages/BooksPage.tsx is the placeholder for /books.
+- src/pages/BooksPage.tsx fetches all books and renders their title, author, and status with MUI.
 - src/pages/BookDetailPage.tsx is the placeholder for /books/:id.
 
 Opening / redirects to /books using Navigate with replace, so the redirect does
@@ -35,7 +35,7 @@ const { id } = useParams<{ id: string }>()
 
 For /books/123, id is the string "123". The hook's type also allows undefined,
 so check that id exists before using it in a future data request. No data is
-loaded by the current placeholders.
+loaded by the detail placeholder.
 
 The entry point, route configuration, and shared shell stay directly in src.
 The two route pages share one pages folder, keeping navigation easy to follow
@@ -55,10 +55,13 @@ same book can then update one shared record instead of separate copies.
 
 Apollo handles GraphQL server data and its cache. React state can handle local
 UI needs, so this application does not need Redux or another application state
-store. This setup adds no queries, mutations, or page data
-fetching, and configuring the client alone does not send a GraphQL request.
+store. BooksPage calls useQuery with the generated GetAllBooksDocument. The hook
+uses the provider's client and cache, fetches missing data, and rerenders as the
+result changes. The page shows a spinner while loading, an error alert on failure,
+and a no-books message for an empty list. Successful results show every book's
+title, author, and Available / Checked out chip.
 
-GraphQL Code Generator is configured in codegen.yml. Future operation documents
+GraphQL Code Generator is configured in codegen.yml. Operation documents
 belong in src/graphql/**/*.graphql; generated types are written only to
 src/graphql/generated.ts. Never edit that generated file manually. Run
 npm run codegen after schema or operation changes, with the server running at
