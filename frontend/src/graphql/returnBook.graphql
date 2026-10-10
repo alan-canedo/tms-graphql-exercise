@@ -1,0 +1,17 @@
+mutation ReturnBook($bookId: ID!) {
+  returnBook(bookId: $bookId) {
+    __typename
+    id
+    title
+    author
+    isCheckedOut
+    checkedOutBy {
+      __typename
+      id
+      firstName
+      lastName
+      emailAddress
+      phoneNumber
+    }
+  }
+}

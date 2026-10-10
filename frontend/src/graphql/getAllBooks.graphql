@@ -1,0 +1,8 @@
+query GetAllBooks {
+  getAllBooks {
+    id
+    title
+    author
+    isCheckedOut
+  }
+}

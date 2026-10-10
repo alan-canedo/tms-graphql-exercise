@@ -1,4 +1,4 @@
-export const typeDefs = `#graphql
+﻿export const typeDefs = `#graphql
   type Book {
     id: ID!
     title: String!
@@ -16,6 +16,7 @@ export const typeDefs = `#graphql
   type Query {
     getAllBooks: [Book!]!
     getBookForId(bookId: ID!): Book!
+    getAllPeople: [Person!]!
   }
   type Mutation {
     checkOutBook(bookId: ID!, personId: ID!): Book!
