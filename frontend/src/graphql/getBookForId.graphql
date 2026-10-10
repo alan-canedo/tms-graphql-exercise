@@ -1,0 +1,15 @@
+query GetBookForId($bookId: ID!) {
+  getBookForId(bookId: $bookId) {
+    id
+    title
+    author
+    isCheckedOut
+    checkedOutBy {
+      id
+      firstName
+      lastName
+      emailAddress
+      phoneNumber
+    }
+  }
+}

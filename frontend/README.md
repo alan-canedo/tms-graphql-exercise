@@ -19,23 +19,23 @@ The application uses React Router and a responsive MUI shell:
 - src/App.tsx defines the routes and applies MUI's CssBaseline.
 - src/AppShell.tsx provides the Library Checkout header and main content container.
 - src/pages/BooksPage.tsx fetches all books and renders their title, author, and status with MUI.
-- src/pages/BookDetailPage.tsx is the placeholder for /books/:id.
+- src/pages/BookDetailPage.tsx fetches one book for /books/:id and displays its details and borrower contact information.
 
 Opening / redirects to /books using Navigate with replace, so the redirect does
 not leave an extra entry in browser history. Routes matches /books to BooksPage
 and a URL such as /books/123 to BookDetailPage. The :id segment captures one
 URL segment; /books does not also render the detail page.
 
-When book data is added later, BookDetailPage can import useParams from
-react-router and read the parameter with:
+BookDetailPage reads the route parameter with `useParams<"id">()`. For
+/books/123, `id` is the string "123", which is passed as the `bookId` variable
+to the generated GetBookForIdDocument. If the parameter is missing, Apollo's
+skipToken prevents the request and the page shows a missing-ID message.
 
-```tsx
-const { id } = useParams<{ id: string }>()
-```
-
-For /books/123, id is the string "123". The hook's type also allows undefined,
-so check that id exists before using it in a future data request. No data is
-loaded by the detail placeholder.
+The detail page shows loading and error states, the title, author, availability,
+and a Back to books link in every state. Checked-out books show the borrower's
+full name, a mailto email link, and a phone number when present. A nullable
+checkedOutBy is handled with a borrower-details-unavailable message. No checkout
+or return actions are implemented.
 
 The entry point, route configuration, and shared shell stay directly in src.
 The two route pages share one pages folder, keeping navigation easy to follow
