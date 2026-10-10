@@ -11,12 +11,15 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@apollo/client": "^4.3.3",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^9.4.0",
+    "graphql": "^16.14.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router": "^8.4.0"
+    "react-router": "^8.4.0",
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
