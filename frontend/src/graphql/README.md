@@ -120,5 +120,42 @@ also checked for a successful checkout to the selected borrower. Otherwise a
 useful failure alert is shown, including when another borrower already has it.
 BookCheckout remains mounted to preserve this alert if availability changes,
 while its form is rendered only for available books. No optimisticResponse is
-provided: cached Book fields change only when a response arrives. No return
-functionality is added.
+provided: cached Book fields change only when a response arrives.
+
+## Return operation, confirmation, and cache updates
+
+`returnBook.graphql` defines `ReturnBook($bookId: ID!)` against the existing
+server mutation. Its generated ReturnBookDocument supplies inferred result and
+variable types to useMutation without `any`. It selects Book __typename, id,
+title, author, isCheckedOut, and checkedOutBy with all borrower detail fields.
+The server returns isCheckedOut: false and checkedOutBy: null after a return.
+Apollo merges this response into the existing `Book:<id>` record automatically.
+Both list and detail queries reference that record, so availability, borrower
+details, and the list's client-side filters update without reload or refetch.
+There is no optimisticResponse or separate React copy of the book.
+
+BookReturn stays mounted in the detail page and shows Return Book only while
+checked out. Clicking the button opens a MUI Dialog with a Return Book title,
+a description naming the book and explaining that its borrower will be cleared,
+and Cancel and Confirm controls. Unique useId values connect aria-labelledby
+and aria-describedby to that title and description. MUI provides role="dialog",
+aria-modal, automatic focus management, and the built-in focus trap. Cancel has
+autoFocus; Tab and Shift+Tab stay inside the modal. None of disableAutoFocus,
+disableEnforceFocus, or disableRestoreFocus is enabled. Cancel, Escape, and
+backdrop dismissal restore focus to the trigger. On success the trigger is
+removed, so after the exit transition focus moves to the book title, which has
+tabIndex=-1 and does not add a stop to the normal Tab order.
+
+Confirm checks that the dialog is open and the book is still checked out. A
+synchronous ref lock is set before calling the mutation, preventing a second
+submission even before Apollo's loading state renders. While pending, Return
+Book, Cancel, and Confirm are disabled and onClose ignores Escape/backdrop
+requests. The confirmation button reads Returning… and the dialog is marked
+busy. The ref lock is released in finally for both successful and failed calls.
+
+A successful response is checked for the requested ID, isCheckedOut: false,
+and checkedOutBy: null before closing the dialog. The detail then shows Available
+and the checkout controls. GraphQL/network failures keep the dialog open and
+show an error Alert with the returned error message; controls re-enable for
+retry or cancellation. An unchanged or missing result also leaves a useful
+failure message in the dialog. Reopening clears the previous failure.

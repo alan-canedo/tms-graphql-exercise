@@ -9,12 +9,15 @@ import {
   Stack,
   Typography,
 } from "@mui/material"
+import { useRef } from "react"
 import { Link as RouterLink, useParams } from "react-router"
 import BookCheckout from "../components/BookCheckout.tsx"
+import BookReturn from "../components/BookReturn.tsx"
 import { GetBookForIdDocument } from "../graphql/generated.ts"
 
 function BookDetailPage() {
   const { id } = useParams<"id">()
+  const bookTitleRef = useRef<HTMLHeadingElement>(null)
   const { data, loading, error } = useQuery(
     GetBookForIdDocument,
     id ? { variables: { bookId: id } } : skipToken,
@@ -57,7 +60,7 @@ function BookDetailPage() {
         <Paper variant="outlined" sx={{ p: 2, overflowWrap: "anywhere" }}>
           <Stack spacing={2}>
             <Stack spacing={0.5}>
-              <Typography variant="h5" component="h2">
+              <Typography variant="h5" component="h2" ref={bookTitleRef} tabIndex={-1}>
                 {book.title}
               </Typography>
               <Typography color="text.secondary">{book.author}</Typography>
@@ -68,6 +71,13 @@ function BookDetailPage() {
               sx={{ alignSelf: "flex-start" }}
             />
             <BookCheckout key={book.id} bookId={book.id} isAvailable={!book.isCheckedOut} />
+            <BookReturn
+              key={`return-${book.id}`}
+              bookId={book.id}
+              bookTitle={book.title}
+              isCheckedOut={book.isCheckedOut}
+              focusAfterReturn={() => bookTitleRef.current?.focus()}
+            />
             {book.isCheckedOut && (
               <Stack spacing={0.5}>
                 <Typography variant="h6" component="h3">

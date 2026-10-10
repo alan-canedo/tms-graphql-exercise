@@ -37,7 +37,8 @@ full name, a mailto email link, and a phone number when present. A nullable
 checkedOutBy is handled with a borrower-details-unavailable message. Available
 books show a labeled borrower selector and Check Out button. Borrowers come from
 GetAllPeople; CheckOutBook updates the shared Apollo cache after the server
-responds. No optimistic UI or return action is implemented.
+responds. Checked-out books show a Return Book button that opens a MUI
+confirmation dialog. No optimistic UI is used.
 
 The entry point, route configuration, and shared shell stay directly in src.
 The two route pages share one pages folder, keeping navigation easy to follow
