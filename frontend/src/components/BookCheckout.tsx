@@ -76,6 +76,9 @@ function BookCheckout({ bookId, isAvailable }: BookCheckoutProps) {
             select
             required
             fullWidth
+            sx={{
+              "& .MuiSelect-select.MuiSelect-select": { whiteSpace: "normal", overflowWrap: "anywhere" },
+            }}
             value={personId}
             onChange={(event) => setPersonId(event.target.value)}
             disabled={loading || peopleLoading || !!peopleError || people.length === 0}
@@ -88,7 +91,11 @@ function BookCheckout({ bookId, isAvailable }: BookCheckoutProps) {
             }
           >
             {people.map((person) => (
-              <MenuItem key={person.id} value={person.id}>
+              <MenuItem
+                key={person.id}
+                value={person.id}
+                sx={{ whiteSpace: "normal", overflowWrap: "anywhere" }}
+              >
                 {person.firstName} {person.lastName} ({person.emailAddress})
               </MenuItem>
             ))}

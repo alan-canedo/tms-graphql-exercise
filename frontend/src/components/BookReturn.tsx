@@ -23,6 +23,7 @@ function BookReturn({ bookId, bookTitle, isCheckedOut, focusAfterReturn }: BookR
   const [failure, setFailure] = useState<string | null>(null)
   const inFlight = useRef(false)
   const returned = useRef(false)
+  const cancelButtonRef = useRef<HTMLButtonElement>(null)
   const titleId = useId()
   const descriptionId = useId()
   const [returnBook, { loading }] = useMutation(ReturnBookDocument)
@@ -78,9 +79,10 @@ function BookReturn({ bookId, bookTitle, isCheckedOut, focusAfterReturn }: BookR
         onClose={handleClose}
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        aria-busy={loading}
         slotProps={{
+          paper: { "aria-busy": loading, sx: { overflowWrap: "anywhere" } },
           transition: {
+            onEntered: () => cancelButtonRef.current?.focus(),
             onExited: () => {
               // A successful return removes the trigger; focus the book title instead.
               if (returned.current) focusAfterReturn()
@@ -97,7 +99,7 @@ function BookReturn({ bookId, bookTitle, isCheckedOut, focusAfterReturn }: BookR
           {failure && <Alert severity="error" sx={{ mt: 2 }}>{failure}</Alert>}
         </DialogContent>
         <DialogActions>
-          <Button autoFocus onClick={handleClose} disabled={loading}>Cancel</Button>
+          <Button ref={cancelButtonRef} onClick={handleClose} disabled={loading}>Cancel</Button>
           <Button
             variant="contained"
             onClick={() => { void handleConfirm() }}
