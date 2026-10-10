@@ -23,37 +23,43 @@ import type {
 } from './graphql/generated.ts'
 
 const borrower = {
-  __typename: 'Person',
   id: 'person-1',
   firstName: 'Ada',
   lastName: 'Lovelace',
   emailAddress: 'ada@example.com',
   phoneNumber: '555-0100',
-} satisfies NonNullable<CheckOutBookMutation['checkOutBook']['checkedOutBy']>
+} satisfies NonNullable<GetBookForIdQuery['getBookForId']['checkedOutBy']>
 
 const availableBook = {
-  __typename: 'Book',
   id: 'book-1',
   title: 'Pride and Prejudice',
   author: 'Jane Austen',
   isCheckedOut: false,
-  checkedOutBy: null,
-} satisfies CheckOutBookMutation['checkOutBook']
+} satisfies GetAllBooksQuery['getAllBooks'][number]
 
 const checkedOutBook = {
   ...availableBook,
   id: 'book-2',
   title: 'Sense and Sensibility',
   isCheckedOut: true,
-  checkedOutBy: borrower,
-} satisfies CheckOutBookMutation['checkOutBook']
+} satisfies GetAllBooksQuery['getAllBooks'][number]
 
 const otherBook = {
   ...availableBook,
   id: 'book-3',
   title: 'The Hobbit',
   author: 'J. R. R. Tolkien',
-} satisfies CheckOutBookMutation['checkOutBook']
+} satisfies GetAllBooksQuery['getAllBooks'][number]
+
+const availableBookDetails = {
+  ...availableBook,
+  checkedOutBy: null,
+} satisfies GetBookForIdQuery['getBookForId']
+
+const checkedOutBookDetails = {
+  ...checkedOutBook,
+  checkedOutBy: borrower,
+} satisfies GetBookForIdQuery['getBookForId']
 
 test('searches by author or title and combines search with the availability filter', async () => {
   const user = userEvent.setup()
@@ -106,7 +112,7 @@ test('searches by author or title and combines search with the availability filt
 test('shows the current borrower and contact information for a checked-out book', async () => {
   const bookMock: MockedResponse<GetBookForIdQuery, GetBookForIdQueryVariables> = {
     request: { query: GetBookForIdDocument, variables: { bookId: checkedOutBook.id } },
-    result: { data: { getBookForId: checkedOutBook } },
+    result: { data: { getBookForId: checkedOutBookDetails } },
   }
 
   render(
@@ -131,7 +137,7 @@ test('requires a borrower before checkout and disables checkout controls while s
   const user = userEvent.setup()
   const bookMock: MockedResponse<GetBookForIdQuery, GetBookForIdQueryVariables> = {
     request: { query: GetBookForIdDocument, variables: { bookId: availableBook.id } },
-    result: { data: { getBookForId: availableBook } },
+    result: { data: { getBookForId: availableBookDetails } },
   }
   const peopleMock: MockedResponse<GetAllPeopleQuery, GetAllPeopleQueryVariables> = {
     request: { query: GetAllPeopleDocument },
@@ -145,7 +151,14 @@ test('requires a borrower before checkout and disables checkout controls while s
     // Keep the request pending so the submitting state has no timing race.
     delay: Infinity,
     result: {
-      data: { checkOutBook: { ...availableBook, isCheckedOut: true, checkedOutBy: borrower } },
+      data: {
+        checkOutBook: {
+          ...availableBook,
+          __typename: 'Book',
+          isCheckedOut: true,
+          checkedOutBy: { ...borrower, __typename: 'Person' },
+        } satisfies CheckOutBookMutation['checkOutBook'],
+      },
     },
   }
 
