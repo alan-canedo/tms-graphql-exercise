@@ -1,0 +1,17 @@
+mutation CheckOutBook($bookId: ID!, $personId: ID!) {
+  checkOutBook(bookId: $bookId, personId: $personId) {
+    __typename
+    id
+    title
+    author
+    isCheckedOut
+    checkedOutBy {
+      __typename
+      id
+      firstName
+      lastName
+      emailAddress
+      phoneNumber
+    }
+  }
+}

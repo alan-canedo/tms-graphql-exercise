@@ -34,8 +34,10 @@ skipToken prevents the request and the page shows a missing-ID message.
 The detail page shows loading and error states, the title, author, availability,
 and a Back to books link in every state. Checked-out books show the borrower's
 full name, a mailto email link, and a phone number when present. A nullable
-checkedOutBy is handled with a borrower-details-unavailable message. No checkout
-or return actions are implemented.
+checkedOutBy is handled with a borrower-details-unavailable message. Available
+books show a labeled borrower selector and Check Out button. Borrowers come from
+GetAllPeople; CheckOutBook updates the shared Apollo cache after the server
+responds. No optimistic UI or return action is implemented.
 
 The entry point, route configuration, and shared shell stay directly in src.
 The two route pages share one pages folder, keeping navigation easy to follow

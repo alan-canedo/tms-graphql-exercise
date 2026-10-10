@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material"
 import { Link as RouterLink, useParams } from "react-router"
+import BookCheckout from "../components/BookCheckout.tsx"
 import { GetBookForIdDocument } from "../graphql/generated.ts"
 
 function BookDetailPage() {
@@ -66,6 +67,7 @@ function BookDetailPage() {
               color={book.isCheckedOut ? "warning" : "success"}
               sx={{ alignSelf: "flex-start" }}
             />
+            <BookCheckout key={book.id} bookId={book.id} isAvailable={!book.isCheckedOut} />
             {book.isCheckedOut && (
               <Stack spacing={0.5}>
                 <Typography variant="h6" component="h3">

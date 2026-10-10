@@ -78,3 +78,47 @@ query's omission of checkedOutBy does not restrict the detail query: Book expose
 checkedOutBy as Person, and the detail query can select that Person's fields.
 Apollo fetches the fields missing from its cache rather than treating the list's
 four-field response as complete detail data.
+
+## Checkout operations and cache updates
+
+`getAllPeople.graphql` defines the variable-free `GetAllPeople` query. It selects
+id, firstName, lastName, and emailAddress for each person. BookCheckout runs it
+only while the book is available, using skipToken otherwise. The labeled MUI
+selector displays names and emails and submits the selected person's ID.
+Loading, failed, and empty borrower results disable the selector and checkout.
+
+`checkOutBook.graphql` defines `CheckOutBook($bookId: ID!, $personId: ID!)`.
+It submits the current book ID and selected borrower ID to the existing resolver.
+The response explicitly selects Book __typename, id, title, author,
+isCheckedOut, and checkedOutBy with Person __typename, id, firstName, lastName,
+emailAddress, and phoneNumber. These cover every field the list/detail queries
+need, including nullable borrower contact information.
+
+The shared default InMemoryCache identifies a Book by __typename plus id:
+Book with id "2" becomes `Book:2`. Both getAllBooks and getBookForId reference
+that same entity. Apollo adds __typename to queries automatically; the mutation
+also requests it explicitly. Writing the mutation response merges the returned
+fields into `Book:2`, then notifies query observers. The detail immediately shows
+Checked out and borrower details. When navigating back using React Router, the
+list's default cache-first query reads the updated entity, so its status and
+client-side availability filter reflect checkout without refetching or reloading.
+There is no update callback, refetchQueries, or manual Book state synchronization.
+
+BookCheckout stores only the selected borrower ID and a local failure message.
+Book data stays in Apollo, and availability is derived directly from the detail
+query. Keeping a second Book in React state would require synchronizing it with
+both query results and mutation responses and could leave either view stale.
+The component is keyed by book ID so a different book gets a fresh selection.
+
+useMutation supplies loading and error. The button and selector are disabled
+while the mutation runs, and the submit handler also guards against loading or
+an invalid/missing selection. The button reads Checking out… during the request.
+GraphQL and network failures show Unable to check out book with the error message;
+the rejected promise is caught because the hook already exposes the error.
+The existing resolver can silently return an unchanged book, so the response is
+also checked for a successful checkout to the selected borrower. Otherwise a
+useful failure alert is shown, including when another borrower already has it.
+BookCheckout remains mounted to preserve this alert if availability changes,
+while its form is rendered only for available books. No optimisticResponse is
+provided: cached Book fields change only when a response arrives. No return
+functionality is added.
