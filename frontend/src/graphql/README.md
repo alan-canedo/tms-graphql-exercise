@@ -63,15 +63,13 @@ nullabilities. The page guards the borrower before reading Person fields, and
 renders the phone only when it has a value. The other selected Person fields
 are non-null when a Person exists.
 
-`getBookForId(bookId: ID!): Book!` promises a non-null result, but the resolver's
-array find returns undefined for an unknown ID. GraphQL converts this into an
-error with path `["getBookForId"]` and message `Cannot return null for
-non-nullable field Query.getBookForId.`; the response's data is null because the
-failure reaches the root. The page recognizes this specific error and shows
-Book not found. Other GraphQL and network errors show Unable to load book
-details. A missing book result is also handled defensively. The backend schema
-and resolver remain unchanged; without a dedicated not-found error code, this
-classification depends on the current GraphQL error message and path.
+`getBookForId(bookId: ID!): Book!` promises a non-null result. For an unknown ID,
+the resolver throws a GraphQLError with `extensions.code: "BOOK_NOT_FOUND"`.
+The response's data is null because the non-null failure reaches the root.
+The page uses `hasGraphQLErrorCode` to recognize this code and show Book not
+found. Other GraphQL and network errors show Unable to load book details.
+A missing book result is also handled defensively. Classification uses the
+GraphQL error type and code rather than parsing its message.
 
 Every operation independently selects fields allowed by the schema. The list
 query's omission of checkedOutBy does not restrict the detail query: Book exposes
@@ -113,11 +111,13 @@ The component is keyed by book ID so a different book gets a fresh selection.
 useMutation supplies loading and error. The button and selector are disabled
 while the mutation runs, and the submit handler also guards against loading or
 an invalid/missing selection. The button reads Checking out… during the request.
-GraphQL and network failures show Unable to check out book with the error message;
-the rejected promise is caught because the hook already exposes the error.
-The existing resolver can silently return an unchanged book, so the response is
-also checked for a successful checkout to the selected borrower. Otherwise a
-useful failure alert is shown, including when another borrower already has it.
+The resolver rejects invalid checkout requests with `BOOK_NOT_FOUND`,
+`PERSON_NOT_FOUND`, or `BOOK_ALREADY_CHECKED_OUT` GraphQL error codes. The
+component uses these codes to show specific failure messages; other GraphQL
+and network failures show Unable to check out book with the error message.
+The rejected promise is caught because the hook already exposes the error.
+The response is also checked defensively for a successful checkout to the
+selected borrower, showing a failure alert if that check fails.
 BookCheckout remains mounted to preserve this alert if availability changes,
 while its form is rendered only for available books. No optimisticResponse is
 provided: cached Book fields change only when a response arrives.
