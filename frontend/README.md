@@ -6,7 +6,8 @@ frontend directory:
 - npm ci: install the locked dependencies.
 - npm run dev: start the Vite development server.
 - npm run codegen: regenerate GraphQL types from the running local server.
-- npm run typecheck: check application and Vite configuration types.
+- npm test: run the three Vitest behavior tests once (no backend required).
+- npm run typecheck: check application, tests, and Vite/Vitest configuration types.
 - npm run build: typecheck and create the production bundle in dist/.
 - npm run preview: serve the built bundle locally.
 - npm run lint: run the scaffold-provided Oxlint checks.
@@ -70,3 +71,36 @@ src/graphql/generated.ts. Never edit that generated file manually. Run
 npm run codegen after schema or operation changes, with the server running at
 http://localhost:4000/. See src/graphql/README.md for dependency explanations
 and the distinction between schema types and operation result types.
+
+## Behavior tests
+
+`src/App.test.tsx` renders the real app with React Testing Library, `user-event`,
+and an in-memory router. Assertions use accessible roles, names, visible text,
+and disabled states rather than CSS classes or snapshots. Vitest runs in jsdom;
+`src/test/setup.ts` adds jest-dom matchers and cleans up after each test.
+
+The suite deliberately focuses on three user behaviors:
+
+- Search by title or author, including mixed case and surrounding spaces, combines
+  with Available / Checked out filters. It also checks the no-matches message
+  and restoring results. This guards the main way users find a suitable book.
+- A checked-out book shows the borrower's full name, email link, and phone number.
+  This guards the contact information users need to locate the current borrower.
+- Checkout stays disabled until a borrower is selected. Submitting then disables
+  both the button and borrower selector and shows Checking out. This guards
+  incomplete submissions and repeated submissions while the request is pending.
+
+Apollo's `MockedProvider` matches the generated GraphQL documents and exact
+variables to typed `MockedResponse` fixtures. Hooks and the Apollo cache run
+normally; no live server or mocked hooks are needed. Fixtures include
+`__typename` and IDs for normal cache behavior. The checkout response uses
+`delay: Infinity` to keep submission pending without timing-dependent sleeps.
+Each render creates a fresh provider/cache, and cleanup unmounts pending requests.
+
+Return-book flows, completed checkout/cache updates, network errors, missing
+borrower data, and visual/responsive layout are intentionally outside this small
+suite. They cover separate behaviors and would expand the scope beyond the three
+focused regressions. There is no coverage target or browser automation.
+
+Run `npm test` here or from the repository root. For watch mode, run
+`npm test -- --watch` from this directory.
