@@ -1,6 +1,7 @@
 import { skipToken, useMutation, useQuery } from "@apollo/client/react"
 import { Alert, Button, MenuItem, Stack, TextField } from "@mui/material"
 import { useState } from "react"
+import { hasGraphQLErrorCode } from "../graphql/errors.ts"
 import {
   CheckOutBookDocument,
   GetAllPeopleDocument,
@@ -20,6 +21,13 @@ function BookCheckout({ bookId, isAvailable }: BookCheckoutProps) {
   )
   const [checkOutBook, { loading, error }] = useMutation(CheckOutBookDocument)
   const people = data?.getAllPeople ?? []
+  const errorMessage = hasGraphQLErrorCode(error, "BOOK_NOT_FOUND")
+    ? "Unable to check out book: Book not found. It may no longer be in the library."
+    : hasGraphQLErrorCode(error, "PERSON_NOT_FOUND")
+      ? "Unable to check out book: The selected borrower could not be found."
+      : hasGraphQLErrorCode(error, "BOOK_ALREADY_CHECKED_OUT")
+        ? "Unable to check out book: The book is no longer available."
+        : error ? `Unable to check out book: ${error.message}` : null
   const canCheckOut =
     isAvailable &&
     !loading &&
@@ -33,7 +41,6 @@ function BookCheckout({ bookId, isAvailable }: BookCheckoutProps) {
     setCheckoutFailure(null)
     try {
       const result = await checkOutBook({ variables: { bookId, personId } })
-      // The resolver can return an unchanged book instead of a GraphQL error.
       if (
         !result.data?.checkOutBook.isCheckedOut ||
         result.data.checkOutBook.checkedOutBy?.id !== personId
@@ -53,7 +60,7 @@ function BookCheckout({ bookId, isAvailable }: BookCheckoutProps) {
     <Stack spacing={2}>
       {(error || checkoutFailure) && (
         <Alert severity="error">
-          {error ? `Unable to check out book: ${error.message}` : checkoutFailure}
+          {error ? errorMessage : checkoutFailure}
         </Alert>
       )}
       {isAvailable && (

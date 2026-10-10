@@ -51,9 +51,9 @@ These decisions describe the current library checkout application.
 - **Alternative rejected:** Feature modules with separate domain, service, and repository layers.
 - **Cost:** Pages contain query usage, UI logic, and rendering together; more features may require reorganizing them.
 
-## 8. Vitest + React Testing Library
+## 8. Focused behavior tests
 
-- **Choice:** Three behavior tests using jsdom, `MemoryRouter`, and Apollo `MockedProvider`.
-- **Fit:** They exercise search/filter combinations, borrower contact details, and checkout selection/pending controls without a running backend.
+- **Choice:** Vitest + React Testing Library for frontend behavior, and Node's built-in test runner for backend resolvers.
+- **Fit:** Frontend tests cover filtering, borrower details, checkout controls, and GraphQL error handling with mocked responses. Backend tests cover rejected operations and valid checkout/return state changes.
 - **Alternative rejected:** A Playwright E2E suite requiring a browser and running frontend/API.
-- **Cost:** Mocked responses do not verify the live API or deployment. Completed mutation/cache updates, return flows, and visual layout are outside the current tests.
+- **Cost:** These tests do not verify requests through the live GraphQL server, deployment, completed UI mutation/cache updates, or visual layout.

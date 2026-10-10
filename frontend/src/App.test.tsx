@@ -3,6 +3,9 @@ import { MockedProvider } from '@apollo/client/testing/react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
+import { GraphQLError } from 'graphql'
+import BookCheckout from './components/BookCheckout.tsx'
+import BookReturn from './components/BookReturn.tsx'
 import { expect, test } from 'vitest'
 import App from './App.tsx'
 import {
@@ -10,6 +13,7 @@ import {
   GetAllBooksDocument,
   GetAllPeopleDocument,
   GetBookForIdDocument,
+  ReturnBookDocument,
 } from './graphql/generated.ts'
 import type {
   CheckOutBookMutation,
@@ -20,6 +24,8 @@ import type {
   GetAllPeopleQueryVariables,
   GetBookForIdQuery,
   GetBookForIdQueryVariables,
+  ReturnBookMutation,
+  ReturnBookMutationVariables,
 } from './graphql/generated.ts'
 
 const borrower = {
@@ -182,4 +188,104 @@ test('requires a borrower before checkout and disables checkout controls while s
 
   expect(await screen.findByRole('button', { name: 'Checking out…' })).toBeDisabled()
   expect(borrowerSelect).toHaveAttribute('aria-disabled', 'true')
+})
+
+
+test.each([
+  {
+    name: 'BOOK_NOT_FOUND with unrelated human-readable wording',
+    error: new GraphQLError('The requested record is unavailable.', { extensions: { code: 'BOOK_NOT_FOUND' } }),
+    expected: 'Book not found. It may no longer be in the library.',
+  },
+  {
+    name: 'another GraphQL code with the old nullability message',
+    error: new GraphQLError('Cannot return null for non-nullable field Query.getBookForId.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } }),
+    expected: 'Unable to load book details: Cannot return null for non-nullable field Query.getBookForId.',
+  },
+  {
+    name: 'a GraphQL error without a code with the old nullability message',
+    error: new GraphQLError('Cannot return null for non-nullable field Query.getBookForId.'),
+    expected: 'Unable to load book details: Cannot return null for non-nullable field Query.getBookForId.',
+  },
+  {
+    name: 'a network failure whose message says book not found',
+    error: new Error('Book not found.'),
+    expected: 'Unable to load book details: Book not found.',
+  },
+])('book details handles $name by error type and code', async ({ error, expected }) => {
+  const bookMock: MockedResponse<GetBookForIdQuery, GetBookForIdQueryVariables> = {
+    request: { query: GetBookForIdDocument, variables: { bookId: 'missing' } },
+    ...(error instanceof GraphQLError ? { result: { errors: [error] } } : { error }),
+  }
+
+  render(
+    <MockedProvider mocks={[bookMock]}>
+      <MemoryRouter initialEntries={['/books/missing']}>
+        <App />
+      </MemoryRouter>
+    </MockedProvider>,
+  )
+
+  expect((await screen.findByRole('alert')).textContent).toBe(expected)
+})
+
+test.each([
+  ['BOOK_NOT_FOUND', 'Unable to check out book: Book not found. It may no longer be in the library.'],
+  ['PERSON_NOT_FOUND', 'Unable to check out book: The selected borrower could not be found.'],
+  ['BOOK_ALREADY_CHECKED_OUT', 'Unable to check out book: The book is no longer available.'],
+  ['INTERNAL_SERVER_ERROR', 'Unable to check out book: Opaque checkout failure.'],
+])('checkout handles %s without parsing the message', async (code, expected) => {
+  const user = userEvent.setup()
+  const peopleMock: MockedResponse<GetAllPeopleQuery, GetAllPeopleQueryVariables> = {
+    request: { query: GetAllPeopleDocument },
+    result: { data: { getAllPeople: [borrower] } },
+  }
+  const checkoutMock: MockedResponse<CheckOutBookMutation, CheckOutBookMutationVariables> = {
+    request: {
+      query: CheckOutBookDocument,
+      variables: { bookId: availableBook.id, personId: borrower.id },
+    },
+    result: { errors: [new GraphQLError('Opaque checkout failure.', { extensions: { code } })] },
+  }
+
+  render(
+    <MockedProvider mocks={[peopleMock, checkoutMock]}>
+      <BookCheckout bookId={availableBook.id} isAvailable />
+    </MockedProvider>,
+  )
+
+  const borrowerSelect = screen.getByRole('combobox', { name: /Borrower/ })
+  await waitFor(() => expect(borrowerSelect).not.toHaveAttribute('aria-disabled', 'true'))
+  await user.click(borrowerSelect)
+  await user.click(await screen.findByRole('option', { name: 'Ada Lovelace (ada@example.com)' }))
+  await user.click(screen.getByRole('button', { name: 'Check Out' }))
+  expect((await screen.findByRole('alert')).textContent).toBe(expected)
+})
+
+test.each([
+  ['BOOK_NOT_FOUND', 'Unable to return book: Book not found. It may no longer be in the library.'],
+  ['BOOK_NOT_CHECKED_OUT', 'Unable to return book: The book is already available and cannot be returned.'],
+  ['INTERNAL_SERVER_ERROR', 'Unable to return book: Opaque return failure.'],
+])('return handles %s without parsing the message', async (code, expected) => {
+  const user = userEvent.setup()
+  const returnMock: MockedResponse<ReturnBookMutation, ReturnBookMutationVariables> = {
+    request: { query: ReturnBookDocument, variables: { bookId: checkedOutBook.id } },
+    result: { errors: [new GraphQLError('Opaque return failure.', { extensions: { code } })] },
+  }
+
+  render(
+    <MockedProvider mocks={[returnMock]}>
+      <BookReturn
+        bookId={checkedOutBook.id}
+        bookTitle={checkedOutBook.title}
+        isCheckedOut
+        focusAfterReturn={() => {}}
+      />
+    </MockedProvider>,
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Return Book' }))
+  await user.click(await screen.findByRole('button', { name: 'Confirm' }))
+  expect((await screen.findByRole('alert')).textContent).toBe(expected)
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
 })

@@ -10,6 +10,7 @@ import {
 } from "@mui/material"
 import { useId, useRef, useState } from "react"
 import { ReturnBookDocument } from "../graphql/generated.ts"
+import { hasGraphQLErrorCode } from "../graphql/errors.ts"
 
 type BookReturnProps = {
   bookId: string
@@ -50,7 +51,11 @@ function BookReturn({ bookId, bookTitle, isCheckedOut, focusAfterReturn }: BookR
       returned.current = true
       setOpen(false)
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Please try again."
+      const message = hasGraphQLErrorCode(error, "BOOK_NOT_FOUND")
+        ? "Book not found. It may no longer be in the library."
+        : hasGraphQLErrorCode(error, "BOOK_NOT_CHECKED_OUT")
+          ? "The book is already available and cannot be returned."
+          : error instanceof Error ? error.message : "Please try again."
       setFailure(`Unable to return book: ${message}`)
     } finally {
       inFlight.current = false

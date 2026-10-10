@@ -1,4 +1,3 @@
-import { CombinedGraphQLErrors } from "@apollo/client/errors"
 import { skipToken, useQuery } from "@apollo/client/react"
 import {
   Alert,
@@ -14,6 +13,7 @@ import { Link as RouterLink, useParams } from "react-router"
 import BookCheckout from "../components/BookCheckout.tsx"
 import BookReturn from "../components/BookReturn.tsx"
 import { GetBookForIdDocument } from "../graphql/generated.ts"
+import { hasGraphQLErrorCode } from "../graphql/errors.ts"
 
 function BookDetailPage() {
   const { id } = useParams<"id">()
@@ -24,16 +24,7 @@ function BookDetailPage() {
   )
   const book = data?.getBookForId
   const borrower = book?.checkedOutBy
-  // The backend returns undefined for unknown IDs despite declaring Book!.
-  const isUnknownBook =
-    CombinedGraphQLErrors.is(error) &&
-    error.errors.some(
-      (graphQLError) =>
-        graphQLError.path?.length === 1 &&
-        graphQLError.path[0] === "getBookForId" &&
-        graphQLError.message ===
-          "Cannot return null for non-nullable field Query.getBookForId.",
-    )
+  const isUnknownBook = hasGraphQLErrorCode(error, "BOOK_NOT_FOUND")
 
   return (
     <Stack spacing={2}>
