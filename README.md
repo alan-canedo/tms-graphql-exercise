@@ -75,6 +75,41 @@ npm --prefix frontend run build
 
 The frontend build typechecks and produces `frontend/dist/`; it does not start either server.
 
+## Optional stretch goal: one Playwright checkout test
+
+Playwright is the single optional stretch goal because checkout spans routing, GraphQL data fetching, user interaction, mutation handling, and cache-driven UI updates. `frontend/e2e/checkout.spec.ts` runs one Chromium browser test against the actual Vite frontend and local Apollo backend. It does not mock GraphQL.
+
+Install the frontend dependencies and Chromium once (also repeat the browser install after a Playwright upgrade):
+
+```sh
+cd frontend
+npm ci
+npx playwright install chromium
+```
+
+On Linux/WSL, if Chromium's system libraries are missing, use `npx playwright install --with-deps chromium` instead; installing OS packages may require sudo. Run the browser installation and test in the same environment (for example, both inside WSL).
+
+**Both servers must already be running.** Playwright does not start or reset them. After the clean-clone setup above, use these three terminals:
+
+1. Repository root: `npm start`. Start a fresh backend (or restart the existing one) to restore the seed data before the first run.
+2. `frontend/`: `npm run dev -- --host localhost --port 5173 --strictPort`. This keeps Vite on the exact URL configured for Playwright rather than silently selecting another port.
+3. `frontend/`:
+
+```sh
+npm run test:e2e
+npx playwright show-report
+```
+
+The configured frontend URL is `http://localhost:5173`; the application's real GraphQL endpoint is `http://localhost:4000/`. No codegen rerun is needed for this test when using the tracked, unchanged GraphQL documents.
+
+The fixed seed is **The Lord of the Rings (book ID `2`)**, initially available with no borrower, and **luigi bruh (person ID `2`)**, with email `luigi@example.com` and phone `555-555-5556`. The test opens `/books`, follows the book's visible link, requires its status to be Available, selects Luigi, and clicks Check Out. Without reloading, it verifies Checked out plus the borrower's name, email, and phone, exercising Apollo's mutation-driven cache update.
+
+The test uses accessible roles/names and exact visible text, Playwright's automatic waiting, one worker, and no random data. With an unchanged seed, no other client modifying book `2`, and no overlapping E2E runs, the starting state and selection are deterministic. It deliberately fails its Available precondition if the book was already checked out; it does not silently reset another checkout.
+
+Cleanup is part of this same test: a `finally` block clicks Return Book and Confirm when the return control is visible, then verifies Available and the absence of the borrower section. This restores book `2` to its initial available/unassigned state, including when a borrower assertion fails after checkout. A killed browser/test, failed return, or failure before the return control appears can leave state behind; restart the in-memory backend before rerunning in that case. No reset endpoint or test-data service is added.
+
+Playwright writes its HTML report to `frontend/playwright-report/` on each run; `npx playwright show-report` opens it on demand. It saves screenshots only on failed attempts and records a trace on the first retry (one retry is configured). Screenshots and trace ZIPs are under `frontend/test-results/`, with report attachments also included in the HTML report. Both directories are ignored by Git; successful first attempts produce no screenshot or trace. There are no visual snapshots or screenshot galleries. These are Playwright's built-in [reporting](https://playwright.dev/docs/test-reporters) and [failure artifact options](https://playwright.dev/docs/test-use-options).
+
 ## Architecture
 
 - **Backend:** `src/index.ts` starts Apollo Server and defines resolvers; `src/schema.ts` defines the GraphQL schema; `src/data/_db.ts` provides mutable in-memory seed data. Queries retrieve books and borrowers, and mutations check out and return books.
@@ -89,5 +124,5 @@ The frontend build typechecks and produces `frontend/dist/`; it does not start e
 
 ## Known gaps / With another day
 
-- **Test coverage:** There are no backend integration or browser E2E tests. Completed checkout/cache updates, successful returns through the UI, and most loading/error states lack automated coverage. Add those behavior tests and a live checkout/return journey first.
+- **Test coverage:** One live browser checkout journey covers mutation/cache updates and return cleanup. Most loading/error states and broader backend HTTP integration cases still lack automated coverage; add focused behavior coverage as the application grows.
 - **State lifetime and freshness:** Checkout data resets when the backend restarts, and Apollo's cache does not discover changes made by another client automatically. Add persistence and an explicit refresh strategy for use beyond this local exercise.

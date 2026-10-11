@@ -53,7 +53,7 @@ These decisions describe the current library checkout application.
 
 ## 8. Focused behavior tests
 
-- **Choice:** Vitest + React Testing Library for frontend behavior, and Node's built-in test runner for backend resolvers.
-- **Fit:** Frontend tests cover filtering, borrower details, checkout controls, and GraphQL error handling with mocked responses. Backend tests cover rejected operations and valid checkout/return state changes.
-- **Alternative rejected:** A Playwright E2E suite requiring a browser and running frontend/API.
-- **Cost:** These tests do not verify requests through the live GraphQL server, deployment, completed UI mutation/cache updates, or visual layout.
+- **Choice:** Vitest + React Testing Library for frontend behavior, Node's built-in test runner for backend resolvers, and one Playwright checkout test as the single optional stretch goal.
+- **Fit:** Frontend tests cover filtering, borrower details, checkout controls, and GraphQL error handling with mocked responses. Backend tests cover rejected operations and valid checkout/return state changes. The browser test joins routing, real GraphQL fetching/mutations, interaction, and cache-driven UI updates.
+- **Alternative rejected:** A broader E2E suite or custom test orchestration beyond this one checkout journey.
+- **Cost:** The browser test requires Chromium, running frontend/API servers, and an available seeded book; it returns the book through the UI. Deployment and visual layout remain outside this coverage.
